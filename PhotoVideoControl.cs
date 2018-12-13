@@ -25,7 +25,6 @@ public class PhotoVideoControl : MonoBehaviour
 
     private RealtimeClock clock;
     public Camera mainCamera ;
-    private VideoFormat format;
     int i = 0;
     //public GameObject[] objectsToDeactivate;
 
@@ -36,8 +35,6 @@ public class PhotoVideoControl : MonoBehaviour
 
         videoButtonBig.SetActive(false);
         videoButtonSmall.SetActive(true);
-
-       // NatCorder.StopRecording();
 
         //disable watermark
         // waterMark.GetComponent<Image>().enabled = false;
@@ -88,13 +85,11 @@ public class PhotoVideoControl : MonoBehaviour
     }
 
     public void pressVideoButton(){
-        Debug.Log("Pressed video button");
+        
         if (!NatCorder.IsRecording){
-            Debug.Log("Started recording");
             StartRecording();
             videoButtonBig.GetComponent<Image>().color = Color.red;
         }else if (NatCorder.IsRecording){
-            Debug.Log("stopping recording");
             StopRecording();
             videoButtonBig.GetComponent<Image>().color = Color.white;
         }
@@ -105,50 +100,41 @@ public class PhotoVideoControl : MonoBehaviour
         // Playback the video
 #if UNITY_IOS
         //Handheld.PlayFullScreenMovie("file://" + path);
-        NatShare.SaveToCameraRoll(path);
+       // NatShare.SaveToCameraRoll(path);
 #elif UNITY_ANDROID
         //Handheld.PlayFullScreenMovie(path);
         Debug.Log(path);
-        NatShare.SaveToCameraRoll(path);
+        NatShare.SaveToCameraRoll(path, "monticolAR", false);
 #endif
     }
+
     void StartRecording()
     {
-        Debug.Log("start recording method");
         // Start recording
-        format = new VideoFormat(960, 540);
-    
-        NatCorder.StartRecording(Container.MP4, format, AudioFormat.None, OnReplay);
-   
+        NatCorder.StartRecording(Container.MP4, VideoFormat.Screen, AudioFormat.Unity, OnReplay);
         // Create a camera recorder to record the main camera
         clock = new RealtimeClock();
-       
         videoRecorder = CameraRecorder.Create(mainCamera, clock);
-       
-       // audioRecorder = AudioRecorder.Create(sourceAudio);
-
+        audioRecorder = AudioRecorder.Create(sourceAudio);
     }
 
     void StopRecording()
     {
-        Debug.Log("stop recording method");
         //Destroy the camera recorder
         videoRecorder.Dispose();
-       
-       // audioRecorder.Dispose();
-
+        audioRecorder.Dispose();
         // Stop recording
         NatCorder.StopRecording();
-
     }
 
-    //void OnAudioFilterRead(float[] data, int channels)
-    //{
-    //    // Check that we are recording
-    //    if (NatCorder.IsRecording)
-    //    {
-    //        NatCorder.CommitSamples(data, clock.CurrentTimestamp);
-    //    }
-    //}
+    void OnAudioFilterRead(float[] data, int channels)
+    {
+        // Check that we are recording
+        if (NatCorder.IsRecording)
+        {
+            // Commit the frame
+            NatCorder.CommitSamples(data, clock.CurrentTimestamp);
+        }
+    }
 }
 
